@@ -22,8 +22,8 @@
 # Greetz 
 
 - [x] Tsubasa ([@1tsubasa](https://github.com/1Tsubasa))
-- [x] @Ivy-js
-- [x] @Kisakay
-- [x] @Cocolennon
-- [x] @1Sparrowhawk
-- [x] @Senju-sh 
+- [x] Ivy ([@Ivy-js](https://github.com/Ivy-js))
+- [x] Kisakay ([@Kisakay](https://github.com/Kisakay))
+- [x] Cocolennon ([@Cocolennon](https://github.com/Cocolennon))
+- [x] SparrowHawk ([@1Sparrowhawk](https://github.com/1Sparrowhawk))
+- [x] Senju ([@Senju-sh](https://github.com/Senju-sh)) 
