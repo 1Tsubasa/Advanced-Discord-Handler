@@ -21,7 +21,7 @@
 
 # Greetz 
 
-- [x] Tsubasa ([@1tsubasa] (https://github.com/1Tsubasa))
+- [x] Tsubasa ([@1tsubasa](https://github.com/1Tsubasa))
 - [x] @Ivy-js
 - [x] @Kisakay
 - [x] @Cocolennon
