@@ -59,69 +59,73 @@ class Pgp {
     }
 }
 
-class sequelize {
+class SequelizeConfig {
+    constructor(type = "sqlite", database = 'database', username = 'username', password = 'password', host = 'localhost') {
+        this.type = type;
+        this.database = database;
+        this.username = username;
+        this.password = password;
+        this.host = host;
 
-    constructor() {
-        this.type = "sqlite" // sqlite , postgres , mysql , mariadb, mssql , db2 , snowflake , oracle 
-        switch (type) {
+        switch (this.type) {
             case "sqlite":
-                this.sequelize = new Sequelize('database', 'username', 'password', {
-                    host: 'localhost',
+                this.sequelize = new Sequelize(this.database, this.username, this.password, {
+                    host: this.host,
                     dialect: 'sqlite'
-                })
+                });
                 break;
             case "postgres":
-                this.sequelize = new Sequelize('database', 'username', 'password', {
-                    host: 'localhost',
+                this.sequelize = new Sequelize(this.database, this.username, this.password, {
+                    host: this.host,
                     dialect: 'postgres'
-                })
+                });
                 break;
             case "mysql":
-                this.sequelize = new Sequelize('database', 'username', 'password', {
-                    host: 'localhost',
+                this.sequelize = new Sequelize(this.database, this.username, this.password, {
+                    host: this.host,
                     dialect: 'mysql'
-                })
+                });
                 break;
             case "mariadb":
-                this.sequelize = new Sequelize('database', 'username', 'password', {
-                    host: 'localhost',
+                this.sequelize = new Sequelize(this.database, this.username, this.password, {
+                    host: this.host,
                     dialect: 'mariadb'
-                })
+                });
                 break;
             case "mssql":
-                this.sequelize = new Sequelize('database', 'username', 'password', {
-                    host: 'localhost',
+                this.sequelize = new Sequelize(this.database, this.username, this.password, {
+                    host: this.host,
                     dialect: 'mssql'
-                })
+                });
                 break;
             case "db2":
-                this.sequelize = new Sequelize('database', 'username', 'password', {
-                    host: 'localhost',
+                this.sequelize = new Sequelize(this.database, this.username, this.password, {
+                    host: this.host,
                     dialect: 'db2'
-                })
+                });
                 break;
             case "snowflake":
-                this.sequelize = new Sequelize('database', 'username', 'password', {
-                    host: 'localhost',
+                this.sequelize = new Sequelize(this.database, this.username, this.password, {
+                    host: this.host,
                     dialect: 'snowflake'
-                })
+                });
                 break;
             case "oracle":
-                this.sequelize = new Sequelize('database', 'username', 'password', {
-                    host: 'localhost',
+                this.sequelize = new Sequelize(this.database, this.username, this.password, {
+                    host: this.host,
                     dialect: 'oracle'
-                })
+                });
                 break;
             default:
-                this.sequelize = new Sequelize('database', 'username', 'password', {
-                    host: 'localhost',
-                    dialect: 'sqlite'
-                })
-                break;
+                throw new Error(`Unsupported database type: ${this.type}`);
         }
     }
+
     async useSequelize() {
+        this.sequelize.authenticate()
+        console.log("[Database Authentication] Using Sequelize");
         return this.sequelize;
+
     }
 }
 class MySQL {
@@ -151,4 +155,4 @@ class MySQL {
 }
 
 
-module.exports = { Database, Mongo, Pgp, sequelize, MySQL }
+module.exports = { Database, Mongo, Pgp, SequelizeConfig, MySQL }
