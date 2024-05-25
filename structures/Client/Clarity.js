@@ -1,16 +1,14 @@
 const {Collection, Client} = require('discord.js');
-const {Database, Mongo, Pgp , Sequelize} = require("../handlers/Database")
+const { CommandHandler , EventHandler, SlashHandler } = require('../handlers/clariHandler');
+
+const {Database, Mongo, Pgp , SequelizeConfig} = require("../handlers/Database")
 const {Logger} = require('advanced-command-handler')
 const fs = require('fs');
-const Cluster = require("discord-hybrid-sharding");
 const config = require('../config/index')
 const logs = require('discord-logs');
 class Clarity extends Client {
     constructor(options) {
         super(options);
-        if (config.sharding) {
-            this.cluster = new Cluster.Client(this);
-        }
         this.setMaxListeners(0);
         this.cachedChannels = new Map()
         this.config = config;
@@ -21,6 +19,7 @@ class Clarity extends Client {
             debug: true
         });
         this.cooldown = new Collection();
+        
         this.data2 = new Database("Clarity2").useClarityDB();
         this.snipes = new Collection();
         this.snipesEdit = new Collection();
@@ -32,17 +31,8 @@ class Clarity extends Client {
         this.version = require("../config/version");
         this.lang = require("../utils/getLang")
         this.connectToken();
-        this.initCommands();
-        this.initEvents();
-    }
-    async initWebSocket() {
-        const eventsF = fs.readdirSync('./events/webSocket').filter(file => file.endsWith('.js'));
-        Logger.info(`Loading ${eventsF.length} webSocket Events`, `Starting`);
-        for (const file of eventsF) {
-            const eventFile = require(`../events/webSocket/${file}`);
-            const Event = new eventFile(this);
-            this.claritySocket.on(Event.name, (...args) => Event.run(this.claritySocket, this, ...args));
-        }
+        new EventHandler(this);
+        new CommandHandler(this);
     }
 
     async connectToken() {
