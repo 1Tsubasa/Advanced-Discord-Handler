@@ -1,24 +1,29 @@
-
-const {Clarity} = require("./structures/Client/Clarity")
+const { ShardingManager } = require('discord.js')
 const config = require("./structures/config/index")
-const Cluster = require("discord-hybrid-sharding");
+
 if (config.sharding) {
-    new Clarity({
-        partials: ["CHANNEL", "GUILD_MEMBER", "MESSAGE", "REACTION", "USER"],
-        intents: 3276799,
-        allowedMentions: {repliedUser: false},
-        restTimeOffset: 0,
-        shards: Cluster.data.SHARD_LIST,
-        shardCount: Cluster.data.TOTAL_SHARDS
+    const manager = new ShardingManager('./main.js', { token: config.token, respawn: true, totalShards: "auto" })
+    manager.on('shardCreate', (shard) => {
+        shard.on("ready", () => {
+        
+            console.log(`[SHARD] : ${shard.id + 1 } est prêt ! `);
+        })
+        shard.on("disconnect", (event) => {
+            console.log(`[SHARD] : ${shard.id} est déconnecté! `);
+            console.log(event);
+        })
+        shard.on("reconnecting", (event) => {
+            console.log(`[SHARD] : ${shard.id} est en reconnection! `);
+            console.log(event);
+        })
+        shard.on("error", (event) => {
+            console.log(`[SHARD] : ${shard.id} a rencontré une erreur! `);
+            console.log(event);
+        })
+    })
+    manager.spawn({
+        delay: 10000
     })
 } else {
-    new Clarity({
-        partials: ["CHANNEL", "GUILD_MEMBER", "MESSAGE", "REACTION", "USER"],
-        intents: 3276799,
-        allowedMentions: {repliedUser: false},
-        restTimeOffset: 0
-    })
+    require("./main.js")
 }
-
-require('events').EventEmitter.defaultMaxListeners = 0;
-
