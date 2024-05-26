@@ -1,8 +1,9 @@
 const { ShardingManager } = require('discord.js')
 const config = require("./structures/config/index")
-
+const clarity = require("./structures/Client/Clarity")
+const {Clarity} = require("./structures/Client/Clarity");
 if (config.sharding) {
-    const manager = new ShardingManager('./main.js', { token: config.token, respawn: true, totalShards: "auto" })
+    const manager = new ShardingManager('./structures/Client/index.js', { token: config.token, respawn: true, totalShards: "auto" })
     manager.on('shardCreate', (shard) => {
         shard.on("ready", () => {
         
@@ -25,5 +26,12 @@ if (config.sharding) {
         delay: 10000
     })
 } else {
-    require("./main.js")
+    new Clarity({
+        partials: ["CHANNEL", "GUILD_MEMBER", "MESSAGE", "REACTION", "USER"],
+        intents: 3276799,
+        allowedMentions: {repliedUser: false},
+        restTimeOffset: 0
+    })
+
+    require('events').EventEmitter.defaultMaxListeners = 0;
 }
