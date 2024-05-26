@@ -5,8 +5,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "1tsubasa",
   "description": "",
   "dependencies": {
     "advanced-command-handler": "^2.4.0",
@@ -22,5 +21,23 @@
     "pg-promise": "^11.7.7",
     "sequelize": "^6.37.3",
     "stegano.db": "^1.2.5"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/1tsubasa/advanced-discord-handler.git"
+  },
+  "bugs": {
+    "url": "https://github.com/1tsubasa/advanced-discord-handler/issues"
+  },
+  "homepage": "https://github.com/1tsubasa/advanced-discord-handler#readme",
+  "keywords": [
+    "discord.js",
+    "advanced-command-handler",
+    "clarity-db",
+    "mysql",
+    "sequelize",
+    "mongodb",
+    "pg-promise",
+    "stegano.db"
+    ]
 }
