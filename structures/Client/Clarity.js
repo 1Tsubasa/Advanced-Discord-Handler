@@ -1,5 +1,5 @@
 const {Collection, Client} = require('discord.js');
-const { CommandHandler , EventHandler, SlashHandler } = require('../handlers/clariHandler');
+const { CommandHandler , EventHandler, SlashCommandHandler, LangHandler } = require('../handlers/clariHandler');
 
 const {Database, Mongo, Pgp , SequelizeConfig} = require("../handlers/Database")
 const {Logger} = require('advanced-command-handler')
@@ -18,8 +18,7 @@ class Clarity extends Client {
         logs(this, {
             debug: true
         });
-        this.cooldown = new Collection();
-        
+        this.cooldowns = new Collection();
         this.data2 = new Database("Clarity2").useClarityDB();
         this.snipes = new Collection();
         this.snipesEdit = new Collection();
@@ -33,6 +32,7 @@ class Clarity extends Client {
         this.connectToken();
         new EventHandler(this);
         new CommandHandler(this);
+        this.lang = new LangHandler(this)
     }
 
     async connectToken() {
@@ -60,50 +60,6 @@ class Clarity extends Client {
         delete require.cache[require.resolve("../config/index.js")];
         this.config = require("../config/index");
     }
-    async initCommands() {
-        const commandsF = fs.readdirSync('./commands')
-        Logger.info(`Loading ${commandsF.length} commands`, `Starting`);
-       for (const folder of commandsF) {
-            const commandFiles = fs.readdirSync(`./commands/${folder}`).filter(file => file.endsWith('.js'));
-            for (const commandFile of commandFiles) {
-                const command = require(`../../commands/${folder}/${commandFile}`);
-                command.category = folder;
-                command.commandFile = commandFile;
-                this.commands.set(command.name, command);
-                if (command.aliases && command.aliases.length > 0) {
-                    for (const alias of command.aliases) {
-                        this.aliases.set(alias, command.name);
-                    }
-                }
-            }
-            let finale = new Collection();
-            this.commands.map(cmd => {
-                if (finale.has(cmd.name)) return;
-                finale.set(cmd.name, cmd);
-                this.commands.filter((v) => v.name.startsWith(cmd.name) || v.name.endsWith(cmd.name)).map((cm) => finale.set(cm.name, cm));
-            });
-            this.commands = finale;
-        }
-       }
-       async initEvents() {
-        const eventsF = fs.readdirSync('./events')
-        Logger.info(`Loading ${eventsF.length} events`, `Starting`);
-        for (const folder of eventsF) {
-            const eventsFiles = fs.readdirSync(`./events/${folder}`).filter((f) => f.endsWith(".js"));
-            for (const eventFile of eventsFiles) {
-                const event = require(`../../events/${folder}/${eventFile}`);
-                if (event.once) {
-                    this.once(event.name, (...args) => event.run(this,...args));
-                } else {
-                    this.on(event.name, (...args) => event.run(this,...args));
-                }
-            }
-        }
-       }
-
-
-
-
 }
 
 module.exports = {
