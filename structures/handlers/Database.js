@@ -47,15 +47,16 @@ class Mongo {
 }
 
 class Pgp {
-    constructor() {
-        this.connectString = "";
+    constructor(connectionString) {
+        this.connectionString = connectionString;
     }
 
-    async connect() {
-        this.client = pgp(this.connectString);
-    };
-    async usePgp() {
-        return this.client;
+    usePgp() {
+        if (!this.db) {
+            this.db = pgp(this.connectionString);
+            console.log("Connected to the database successfully.");
+        }
+        return this.db;
     }
 }
 
