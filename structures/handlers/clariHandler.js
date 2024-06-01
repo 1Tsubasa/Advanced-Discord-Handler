@@ -1,4 +1,7 @@
 const fs = require('fs');
+const { REST } = require('@discordjs/rest');
+const { Routes } = require('discord-api-types/v10');
+const { token } = require("../config/index")
 class EventHandler {
     constructor(clarity) {
         this.clarity = clarity;
@@ -68,6 +71,7 @@ class SlashCommandHandler {
     constructor(clarity) {
         this.clarity = clarity;
         this.getFiles("slashCommands");
+        this.slashCommands = [];
     }
 
     getFiles(path) {
@@ -83,11 +87,30 @@ class SlashCommandHandler {
         })
     }
 
+
     registerFile(file) {
-        const pull = require(`../${file}`);
-        if (pull.name)
-            this.clarity.slashCommand.set(pull.name.toLowerCase(), pull);
-            delete require.cache[require.resolve(`../${file}`)];
+        const command = require(`../../${file}`);
+        if (command.data) {
+            this.clarity.slashCommand.set(command.data.name.toLowerCase(), command);
+            this.slashCommands.push(command.data.toJSON());
+        }
+        const rest = new REST({ version: '9' }).setToken(token);
+
+        (async () => {
+            try {
+                console.log('Started refreshing application (/) commands.');
+        
+                await rest.put(
+                    Routes.applicationCommands(Buffer.from(token.split(".")[0], "base64").toString()),
+                    { body: this.slashCommands },
+                );
+        
+                console.log('Successfully reloaded application (/) commands.');
+            } catch (error) {
+                console.error(error);
+            }
+        })()
+        delete require.cache[require.resolve(`../../${file}`)];
     }
 }
 
