@@ -1,20 +1,22 @@
 module.exports = {
-    token: "",
-    color: "3535f8",
+    token: "TOKEN DU BOT",
+    color: "#3535f8",
+    clientID: "ID DU BOT", // for slashCommands
     footer: {
-        text: "ζ͜͡Clarity",
-        icon_url: "https://cdn.discordapp.com/attachments/1083541167012073565/1240044124686647296/Logo_Clarity-V2.png?ex=6645c956&is=664477d6&hm=f7bc6010ff62ab05f5d9c8456b926dc17f5ff6e0ef8102b0f6c05df117bc8b21&"
+        text: "ζ͜͡Hiden Steal",
+        icon_url: "https://cdn.discordapp.com/attachments/1153422397706350764/1254486658879979572/68747470733a2f2f692e696d6775722e636f6d2f446c64366c77352e706e67.png?ex=6679ab3e&is=667859be&hm=6d882299ad73b323915d85ca103d654d604f955142d195926039fb6d5633b4a8&"
     },
-    clarity: {
-        devs: ["1072553881134972970", '378594821721554947', "171356978310938624"],
-        ownerClari: ["1072553881134972970", '378594821721554947', "564715031321772032" , "784432231371374624", "226017895963033601"],
-        respClari: ["171356978310938624",  "1148560858054656020", "1070807183152910366"],
-        marketClari: [],
-        designClari: ["993629285325733971"],
-        techClari: ["146056203397627904", "214339832061624320", "233657223190937601", "1127594734219710504", "842369097572024330", "366673880628199426", "1099042785736282205"]
+    team: {
+        owner: ["1072553881134972970"],
+        resp: [],
+        market: [],
+        design: [],
+        mod: [],
+        devs: ["1072553881134972970"],
+        tech: []
     },
-    prefix: "+",
-    support: 'https://discord.gg/clarityfr',
+    prefix: "-",
+    support: 'https://discord.gg/Hp4UTnkEf2',
     buyer: "1072553881134972970",
     sharding: false,
     defaultLang: "fr"
