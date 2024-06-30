@@ -1,159 +1,111 @@
 const ClarityDB = require("clarity-db");
 const { SteganoDB } = require("stegano.db");
-const pgp = require("pg-promise")();
-const { Sequelize } = require("sequelize")
+const { Client } = require("quickpostgres");
+const { QuickDB, MySQLDriver, MongoDriver, JSONDriver, MemoryDriver } = require("quick.db");
 const { MongoClient } = require('mongodb');
-const mysql = require('mysql');
-class Database { 
-    constructor(dbName) {
-        this.clarityDB = new ClarityDB(`./structures/DB/NOSQL/JSON/${dbName}.json`, {
+
+class Database {
+    constructor(config) {
+        this.config = config || {}; // Ensure config is defined
+        this.databases = {};
+
+        // Dynamically initialize each database if its config is present
+        if (this.config.clarityDB) this.initClarityDB();
+        if (this.config.steganoDB) this.initSteganoDB();
+        if (this.config.quickDB) this.initQuickDB();
+        if (this.config.postgres) this.initPostgres();
+        if (this.config.mongoDB) this.initMongoDB();
+    }
+
+    initClarityDB() {
+        const clarityConfig = this.config.clarityDB;
+        this.databases.clarityDB = new ClarityDB(`./structures/DB/NOSQL/JSON/${clarityConfig.dbName}.json`, {
             backup: {
-                enabled: true,
-                folder: './db_backups/',
-                interval: 3600000
+                enabled: clarityConfig.backup?.enabled ?? true,
+                folder: clarityConfig.backup?.folder ?? './db_backups/',
+                interval: clarityConfig.backup?.interval ?? 3600000
             },
-            preset: {
-                hello: "world"
-            }
+            preset: clarityConfig.preset || { hello: "world" }
         });
-        this.steganoDB = new SteganoDB(`./structures/DB/NOSQL/Stegano/${dbName}.png`);
-    }
-    useClarityDB() {
-        return this.clarityDB;
-    }
-    useSteganoDB() {
-        return this.steganoDB;
-    }
-}
-
-
-class Mongo {
-
-    constructor(dbName) {
-        this.url = 'mongodb://localhost:27017';
-        this.client = new MongoClient(this.url);
-        this.dbName = dbName;
     }
 
-    async connect() {
-        await this.client.connect();
-        this.db = this.client.db(this.dbName);
-        this.Logger.info(`Connected successfully to server`, `Success`)
-        return;
-    }
-    async useMongo() {
-        return this.db;
-    }
-}
-
-class Pgp {
-    constructor(connectionString) {
-        this.connectionString = connectionString;
+    initSteganoDB() {
+        const steganoConfig = this.config.steganoDB;
+        this.databases.steganoDB = new SteganoDB(`./structures/DB/NOSQL/Stegano/${steganoConfig.dbName}.png`);
     }
 
-    usePgp() {
-        if (!this.db) {
-            this.db = pgp(this.connectionString);
-            console.log("Connected to the database successfully.");
-        }
-        return this.db;
-    }
-}
+    initQuickDB() {
+        let driver;
+        const quickConfig = this.config.quickDB;
 
-class SequelizeConfig {
-    constructor(type = "sqlite", database = 'database', username = 'username', password = 'password', host = 'localhost') {
-        this.type = type;
-        this.database = database;
-        this.username = username;
-        this.password = password;
-        this.host = host;
-
-        switch (this.type) {
-            case "sqlite":
-                this.sequelize = new Sequelize(this.database, this.username, this.password, {
-                    host: this.host,
-                    dialect: 'sqlite'
-                });
+        switch (quickConfig.driver) {
+            case 'mysql':
+                driver = new MySQLDriver(quickConfig.mysqlOptions);
                 break;
-            case "postgres":
-                this.sequelize = new Sequelize(this.database, this.username, this.password, {
-                    host: this.host,
-                    dialect: 'postgres'
-                });
+            case 'mongo':
+                driver = new MongoDriver(quickConfig.mongoURI);
                 break;
-            case "mysql":
-                this.sequelize = new Sequelize(this.database, this.username, this.password, {
-                    host: this.host,
-                    dialect: 'mysql'
-                });
+            case 'json':
+                driver = new JSONDriver();
                 break;
-            case "mariadb":
-                this.sequelize = new Sequelize(this.database, this.username, this.password, {
-                    host: this.host,
-                    dialect: 'mariadb'
-                });
+            case 'memory':
+                driver = new MemoryDriver();
                 break;
-            case "mssql":
-                this.sequelize = new Sequelize(this.database, this.username, this.password, {
-                    host: this.host,
-                    dialect: 'mssql'
-                });
-                break;
-            case "db2":
-                this.sequelize = new Sequelize(this.database, this.username, this.password, {
-                    host: this.host,
-                    dialect: 'db2'
-                });
-                break;
-            case "snowflake":
-                this.sequelize = new Sequelize(this.database, this.username, this.password, {
-                    host: this.host,
-                    dialect: 'snowflake'
-                });
-                break;
-            case "oracle":
-                this.sequelize = new Sequelize(this.database, this.username, this.password, {
-                    host: this.host,
-                    dialect: 'oracle'
-                });
-                break;
+            case 'sqlite':
+                // Create SQLite database directly without specifying a driver
+                this.databases.quickDB = new QuickDB({ filepath: `./structures/DB/QuickDB/db.sqlite` });
+                return;
             default:
-                throw new Error(`Unsupported database type: ${this.type}`);
+                throw new Error("Unsupported QuickDB driver specified");
         }
+
+        this.databases.quickDB = new QuickDB({ driver });
     }
 
-    async useSequelize() {
-        this.sequelize.authenticate()
-        console.log("[Database Authentication] Using Sequelize");
-        return this.sequelize;
+    initPostgres() {
+        const postgresConfig = this.config.postgres;
+        this.databases.postgres = new Client({
+            connectionString: postgresConfig.connectionString
+        });
+        this.databases.postgres.connect();
+    }
 
+    initMongoDB() {
+        const mongoConfig = this.config.mongoDB;
+        this.databases.mongoDB = new MongoClient(mongoConfig.connectionString, { useNewUrlParser: true, useUnifiedTopology: true });
+        this.databases.mongoDB.connect();
+    }
+
+    useClarityDB() {
+        return this.databases.clarityDB;
+    }
+
+    useSteganoDB() {
+        return this.databases.steganoDB;
+    }
+
+    useQuickDB() {
+        return this.databases.quickDB;
+    }
+
+    usePostgres() {
+        return this.databases.postgres;
+    }
+
+    useMongoDB() {
+        return this.databases.mongoDB;
+    }
+
+    prepareStatement(dbName, tableName) {
+        const db = this.databases[dbName];
+        if (!db) throw new Error(`Database ${dbName} not found`);
+
+        if (typeof db.prepare !== 'function') {
+            throw new Error(`The prepare method is not available for the ${dbName} database`);
+        }
+
+        return db.prepare(tableName);
     }
 }
-class MySQL {
-    constructor() {
-        this.host = 'localhost';
-        this.user = '';
-        this.password = '';
-        this.database = '';
-    }
-    async connect() {
-        this.connection = mysql.createConnection({
-            host: this.host,
-            user: this.user,
-            password:  this.password,
-            database: this.database
-        });
-        this.connection.connect(function (err) {
-            this.Logger.info(`Connected successfully to server`, `Success`)
-            this.Logger.info(`Connected successfully to database`, `Success`)
-            this.Logger.info(`Connected successfully as Id ${this.connection.threadId}`, `Success`)
-        });
-        return;
-    }
-    async useMySQL() {
-        return this.connection;
-    }
-}
 
-
-module.exports = { Database, Mongo, Pgp, SequelizeConfig, MySQL }
+module.exports = { Database };
