@@ -1,7 +1,7 @@
 # Advanced Discord Handler 
 ---
 
-![Tsu](https://cdn.discordapp.com/attachments/1134643812405346384/1256901909303005204/PP_Tsubasa1-ezgif.com-cut.gif?ex=6682749f&is=6681231f&hm=38ec9a7a655e4b33f41bbb96b328e8b8269661f445ec8b186c6166e71777a81e&)
+![Tsu](https://cdn.discordapp.com/attachments/1256592736568741898/1256902643704533103/wye3cpam264.png?ex=6682754e&is=668123ce&hm=a9d8c89205b4b47eccce5628394c8988a8860767d9edcec0ac7084e4d37d0ece&)
 
 ---
 
