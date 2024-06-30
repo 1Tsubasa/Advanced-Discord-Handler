@@ -1,11 +1,12 @@
-const {Collection, Client} = require('discord.js');
-const { CommandHandler , EventHandler, SlashCommandHandler, LangHandler } = require('../handlers/clariHandler');
-
-const {Database, Mongo, Pgp , SequelizeConfig} = require("../handlers/Database")
-const {Logger} = require('advanced-command-handler')
+const {Collection, Client} = require('pwss');
+const { CommandHandler , EventHandler, SlashCommandHandler, LangHandler, AntiCrashHandler } = require('../handlers/clariHandler');
+const { Database } = require("../handlers/Database")
+const { REST } = require('@discordjs/rest');
+const { Routes } = require('discord-api-types/v9');
 const fs = require('fs');
 const config = require('../config/index')
-const logs = require('discord-logs');
+const rest = new REST({ version: '9' }).setToken(config.token)
+const dbConfig = require("../DB/Config")
 class Clarity extends Client {
     constructor(options) {
         super(options);
@@ -13,25 +14,25 @@ class Clarity extends Client {
         this.cachedChannels = new Map()
         this.config = config;
         this.commands = new Collection();
+        this.slashCommands = new Collection();
+        this.langList = new Collection();
         this.events = new Collection();
         this.aliases = new Collection();
-        logs(this, {
-            debug: true
-        });
         this.cooldowns = new Collection();
-        this.data2 = new Database("Clarity2").useClarityDB();
-        this.snipes = new Collection();
-        this.snipesEdit = new Collection();
+        this.Collection = Collection
+        this.snipes = new Map();
+        this.db = new Database(dbConfig).useSteganoDB()
+        this.snipesEdit = new Map();
         this.unavailableGuilds = 0;
-        this.Logger = Logger;
         this.functions = require("../functions/index")
         this.ms = require("../utils/ms")
         this.afk = require("../utils/afk");
+        this.axios = require("axios");
         this.version = require("../config/version");
-        this.lang = require("../utils/getLang")
         this.connectToken();
         new EventHandler(this);
-        new CommandHandler(this);
+        this.slashCommandHandler = new SlashCommandHandler(this, rest);
+        new AntiCrashHandler(this);
         this.lang = new LangHandler(this)
     }
 
@@ -42,13 +43,13 @@ class Clarity extends Client {
                 if (this.ws.reconnecting || this.ws.destroyed) {
                     this.login(this.config.token).catch((err) => {
                         clearInterval(x);
-                        Logger.error(`Erreur pendant la connexion au token : ${err}`);
+                        console.error(`Erreur pendant la connexion au token : ${err}`);
                     });
                 }
             }, 30000)
         })
             .catch((err) => {
-                Logger.error(err);
+                console.error(err);
                 if(err?.code?.toLowerCase()?.includes("token")) return;
                 setTimeout(() => {
                     this.connectToken();
@@ -60,6 +61,8 @@ class Clarity extends Client {
         delete require.cache[require.resolve("../config/index.js")];
         this.config = require("../config/index");
     }
+
+
 }
 
 module.exports = {
