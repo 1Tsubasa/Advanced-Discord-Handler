@@ -1,151 +1,226 @@
 const fs = require('fs');
+const path = require('path');
+const { readdirSync } = require('fs');
+const { PermissionsBitField } = require('discord.js');
+const { Routes } = require('discord-api-types/v9');
 const { REST } = require('@discordjs/rest');
-const { Routes } = require('discord-api-types/v10');
-const { token } = require("../config/index")
+
 class EventHandler {
     constructor(clarity) {
         this.clarity = clarity;
-        this.getFiles("events")
+        this.getFiles(path.resolve(__dirname, '../../events'));
     }
-    getFiles(path) {
-        fs.readdir(`${path}`, (err, files) => {
-            this.clarity.Logger.info(`Loading ${files.length} events in category ${path}`, `Starting`)
+
+    getFiles(dir) {
+        fs.readdir(dir, (err, files) => {
             if (err) throw err;
             files.forEach(file => {
-
-                if (file.endsWith('.disabled')) return;
-                if (file.endsWith('.js')) {
-                    this.clarity.Logger.comment(`${this.clarity.Logger.setColor('green', `Bind: ${file.split('.js')[0]}`)}`, `Binding events`)
-                    return this.registerFile(`${path}/${file}`, this.clarity);
-                }
-                if (!file.includes("."))
-                    this.getFiles(`${path}/${file}`);
-            })
-        })
+                const filePath = path.join(dir, file);
+                fs.stat(filePath, (err, stats) => {
+                    if (err) throw err;
+                    if (stats.isDirectory()) {
+                        this.getFiles(filePath);
+                    } else if (file.endsWith('.js') && !file.endsWith('.disabled')) {
+                        console.log(`[EVENTS] Bind: ${file.split('.js')[0]}`);
+                        this.registerFile(filePath);
+                    }
+                });
+            });
+        });
     }
 
     registerFile(file) {
-        const event = require(`../../${file}`);
+        const event = require(file);
         if (event.once) {
-            this.clarity.once(event.name, (...args) => event.run(this.clarity,...args));
+            this.clarity.once(event.name, (...args) => event.run(this.clarity, ...args));
         } else {
-            this.clarity.on(event.name, (...args) => event.run(this.clarity,...args));
+            this.clarity.on(event.name, (...args) => event.run(this.clarity, ...args));
         }
-        delete require.cache[require.resolve(`../../${file}`)];
+        delete require.cache[require.resolve(file)];
     }
 }
-
 
 class LangHandler {
     constructor(clarity) {
         this.clarity = clarity;
-        this.getFiles("lang");
+        this.getFiles(path.resolve(__dirname, '../../lang'));
     }
-    getFiles(path) {
-        fs.readdir(`${path}`, (err, files) => {
+
+    getFiles(dir) {
+        fs.readdir(dir, (err, files) => {
             if (err) throw err;
             files.forEach(file => {
-                if (file.endsWith('.disabled')) return;
-                if (file.endsWith('.js')) {
-                    this.clarity.Logger.comment(`${this.clarity.Logger.setColor('green', `Load: ${file.split('.js')[0]}`)}`, `Loading languages`)
-                    return this.registerFile(`${path}/${file}`, this.clarity);
-                }
-                if (!file.includes("."))
-                    this.getFiles(`${path}/${file}`);
-            })
-        })
+                const filePath = path.join(dir, file);
+                fs.stat(filePath, (err, stats) => {
+                    if (err) throw err;
+                    if (stats.isDirectory()) {
+                        this.getFiles(filePath);
+                    } else if (file.endsWith('.js') && !file.endsWith('.disabled')) {
+                        console.log(`[LANG] Bind: ${file.split('.js')[0]}`);
+                        this.registerFile(filePath);
+                    }
+                });
+            });
+        });
+    }
+
+    registerFile(file) {
+        const pull = require(file);
+        if (pull.name) {
+            this.clarity.langList.set(file.split("/").pop().slice(0, -3), pull.dictionary);
+        }
+        delete require.cache[require.resolve(file)];
     }
 
     get(Lang) {
         return this.clarity.langList.get(Lang);
     }
+}
+
+class AntiCrashHandler {
+    constructor(clarity) {
+        this.clarity = clarity;
+        this.getFiles(path.resolve(__dirname, '../../antiCrash'));
+    }
+
+    getFiles(dir) {
+        fs.readdir(dir, (err, files) => {
+            if (err) throw err;
+            files.forEach(file => {
+                const filePath = path.join(dir, file);
+                fs.stat(filePath, (err, stats) => {
+                    if (err) throw err;
+                    if (stats.isDirectory()) {
+                        this.getFiles(filePath);
+                    } else if (file.endsWith('.js') && !file.endsWith('.disabled')) {
+                        console.log(`[ANTICRASH] Bind: ${file.split('.js')[0]}`);
+                        this.registerFile(filePath);
+                    }
+                });
+            });
+        });
+    }
+
     registerFile(file) {
-        const pull = require(`../../${file}`);
-        if (pull.name)
-        this.clarity.langList.set(file.split("/").pop().slice(0, -3), pull.dictionary);
-        delete require.cache[require.resolve(`../../${file}`)];
+        const event = require(file);
+        if (event.once) {
+            this.clarity.once(event.name, (...args) => event.run(this.clarity, ...args));
+        } else {
+            this.clarity.on(event.name, (...args) => event.run(this.clarity, ...args));
+        }
+        delete require.cache[require.resolve(file)];
     }
 }
 
 class SlashCommandHandler {
-    constructor(clarity) {
-        this.clarity = clarity;
-        this.getFiles("slashCommands");
-        this.slashCommands = [];
+    constructor(client, rest) {
+        this.client = client;
+        this.rest = rest;
+
+        // Load and register commands when the bot is ready
+        this.client.once('ready', () => {
+            this.loadCommands();
+            this.registerCommands();
+        });
     }
 
-    getFiles(path) {
-        fs.readdir(`${path}`, (err, files) => {
-            if (err) throw err;
-            files.forEach(file => {
-                if (file.endsWith(".disabled")) return;
-                if (file.endsWith(".js"))
-                    return this.registerFile(`${path}/${file}`, this.clarity);
-                if (!file.includes("."))
-                    this.getFiles(`${path}/${file}`);
-            })
-        })
-    }
+    loadCommands() {
+        const data = [];
+        let count = 0;
 
+        // Read all directories in ./slashCommands/
+        const commandDirs = readdirSync(path.resolve(__dirname, '../../slashCommands/'));
+        commandDirs.forEach((dir) => {
+            // Filter all JavaScript files in the directory
+            const slashCommandFiles = readdirSync(path.resolve(__dirname, `../../slashCommands/${dir}/`)).filter((file) => file.endsWith(".js"));
 
-    registerFile(file) {
-        const command = require(`../../${file}`);
-        if (command.data) {
-            this.clarity.slashCommand.set(command.data.name.toLowerCase(), command);
-            this.slashCommands.push(command.data.toJSON());
-        }
-        const rest = new REST({ version: '9' }).setToken(token);
+            // Loop through each file and set up the command
+            for (const file of slashCommandFiles) {
+                const filePath = path.resolve(__dirname, `../../slashCommands/${dir}/${file}`);
+                const slashCommand = require(filePath);
 
-        (async () => {
-            try {
-                console.log('Started refreshing application (/) commands.');
-        
-                await rest.put(
-                    Routes.applicationCommands(Buffer.from(token.split(".")[0], "base64").toString()),
-                    { body: this.slashCommands },
-                );
-        
-                console.log('Successfully reloaded application (/) commands.');
-            } catch (error) {
-                console.error(error);
+                if (!slashCommand.name) {
+                    console.error(`slashCommandNameError: ${file.split(".")[0]} application command name is required.`);
+                    continue;
+                }
+
+                if (!slashCommand.description) {
+                    console.error(`slashCommandDescriptionError: ${file.split(".")[0]} application command description is required.`);
+                    continue;
+                }
+
+                // Set the command in the client's collection
+                this.client.slashCommands.set(slashCommand.name, slashCommand);
+
+                // Add the command data to the data array for registration
+                data.push({
+                    name: slashCommand.name,
+                    description: slashCommand.description,
+                    type: slashCommand.type || 1, // Default to type 1 if not specified
+                    options: slashCommand.options || null,
+                    default_permission: slashCommand.default_permission || null,
+                    default_member_permissions: slashCommand.default_member_permissions ? PermissionsBitField.resolve(slashCommand.default_member_permissions).toString() : null
+                });
+                count++;
             }
-        })()
-        delete require.cache[require.resolve(`../../${file}`)];
+        });
+
+        // Store the data for later registration
+        this.data = data;
+        console.log(`Loaded ${count} slash commands.`);
+    }
+
+    async registerCommands() {
+        const rest = this.rest || new REST({ version: '10' }).setToken(this.client.config.token);
+
+        try {
+            await rest.put(
+                Routes.applicationCommands(this.client.config.clientID),
+                { body: this.data }
+            );
+            console.log('Successfully registered application commands.');
+        } catch (error) {
+            console.error('Error registering application commands:', error);
+        }
     }
 }
 
 class CommandHandler {
     constructor(clarity) {
         this.clarity = clarity;
-        this.getFiles("commands");
+        this.getFiles(path.resolve(__dirname, '../../commands'));
     }
 
-    getFiles(path) {
-        fs.readdir(`${path}`, (err, files) => {
-            this.clarity.Logger.info(`Loading ${files.length} commands in category ${path}`, `Starting`)
+    getFiles(dir) {
+        fs.readdir(dir, (err, files) => {
             if (err) throw err;
             files.forEach(file => {
-                if (file.endsWith('.disabled')) return;
-                if (file.endsWith('.js')) {
-                    this.clarity.Logger.comment(`${this.clarity.Logger.setColor('green', `Load: ${file.split('.js')[0]}`)}`, `Loading commands`)
-                    return this.registerFile(`${path}/${file}`, this.clarity)
-                }
-                if (!file.includes("."))
-                    this.getFiles(`${path}/${file}`);
-            })
-        })
+                const filePath = path.join(dir, file);
+                fs.stat(filePath, (err, stats) => {
+                    if (err) throw err;
+                    if (stats.isDirectory()) {
+                        this.getFiles(filePath);
+                    } else if (file.endsWith('.js') && !file.endsWith('.disabled')) {
+                        console.log(`[COMMANDS] Bind: ${file.split('.js')[0]}`);
+                        this.registerFile(filePath);
+                    }
+                });
+            });
+        });
     }
 
     registerFile(file) {
-        const pull = require(`../../${file}`);
-        if (pull.name)
-            if (pull.aliases && Array.isArray(pull.aliases))
-                pull.aliases.forEach((alias) =>
+        const pull = require(file);
+        if (pull.name) {
+            if (pull.aliases && Array.isArray(pull.aliases)) {
+                pull.aliases.forEach(alias =>
                     this.clarity.aliases.set(alias.toLowerCase(), pull)
                 );
+            }
             this.clarity.commands.set(pull.name.toLowerCase(), pull);
-            delete require.cache[require.resolve(`../../${file}`)];
+            delete require.cache[require.resolve(file)];
+        }
     }
 }
 
-module.exports = { CommandHandler, EventHandler, LangHandler, SlashCommandHandler}
+module.exports = { CommandHandler, EventHandler, LangHandler, SlashCommandHandler, AntiCrashHandler };
