@@ -1,7 +1,7 @@
 # Advanced Discord Handler 
 ---
 
-![Tsu](https://cdn.discordapp.com/attachments/1153422397706350764/1264894259778289684/tumblr_c6759d0521db6eac75566fec8def96ec_d6fffba8_400.gif?ex=669f8814&is=669e3694&hm=a324e61107c29f82553b8aec4b1958da19d8c3901c9d3733c57acf702e822a88&)
+![Tsu](https://cdn.discordapp.com/attachments/1153422397706350764/1264895092682915840/tenor.gif?ex=669f88da&is=669e375a&hm=dea2f1804c7fdd1df70b8d649ec90992d6beab4fe66cd6c1f6fad8b4b85a8dce&)
 
 ---
 
